@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postershop
+      POSTGRES_PASSWORD: postershop
+      POSTGRES_DB: postershop
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+volumes:
+  dbdata:
