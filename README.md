@@ -27,6 +27,11 @@ npm i
 npm run dev        # http://localhost:4000
 ```
 
+**API docs (Swagger):**
+- Open `http://localhost:4000/api-docs` after the backend is running.
+- Expand `POST /auth/login`, click **Try it out**, and enter JSON (email/password).
+- The Swagger UI is configured to use credentials so the session cookie set on login will be stored and sent on subsequent requests.
+
 ### 3) Frontend
 ```bash
 cd frontend
