@@ -11,7 +11,7 @@ This codebase emphasizes **clarity, comments, types, and formatting** (Prettier)
 
 ## Quick Start
 
-### 1) Database
+### 1) Database (Only run once during the first setup)
 ```bash
 docker compose up -d db
 

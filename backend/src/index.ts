@@ -12,6 +12,8 @@ import cors from 'cors';
 import session from 'express-session';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from './swagger';
 import type { SessionUser } from './types';
 
 const app = express();
@@ -22,6 +24,7 @@ process.on('unhandledRejection', (err) => {
   console.error('UNHANDLED REJECTION', err);
   process.exit(1);
 });
+
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION', err);
   process.exit(1);
@@ -44,6 +47,22 @@ app.use(
   }),
 );
 
+// Swagger UI (OpenAPI)
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup((swaggerDocument as any), {
+    swaggerOptions: {
+      // ensure browser includes credentials when 'Try it out' is used so set-cookie works
+      requestInterceptor: (req: any) => {
+        req.credentials = 'include';
+        return req;
+      },
+    },
+  }),
+);
+app.get('/swagger.json', (_, res) => res.json(swaggerDocument));
+
 /** Helper: place a minimal user object into the session */
 function setSessionUser(req: Request, user: SessionUser): void {
   (req.session as any).user = user;
@@ -51,14 +70,21 @@ function setSessionUser(req: Request, user: SessionUser): void {
 
 /** Middleware: require a logged-in user */
 function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if ((req.session as any)?.user) return next();
+  if ((req.session as any)?.user) {
+    return next();
+  }
+
   return res.status(401).json({ error: 'Unauthorized' });
 }
 
 /** Find or create a cart for a user, returning its id */
 async function getOrCreateCartId(userId: number): Promise<number> {
   const existing = await pool.query('SELECT id FROM carts WHERE user_id=$1', [userId]);
-  if (existing.rows[0]) return existing.rows[0].id;
+
+  if (existing.rows[0]) {
+    return existing.rows[0].id;
+  }
+
   const created = await pool.query('INSERT INTO carts (user_id) VALUES ($1) RETURNING id', [userId]);
   return created.rows[0].id;
 }
@@ -99,16 +125,22 @@ app.post('/auth/register', async (req: Request, res: Response) => {
     if (!name || !email || !password || String(password).length < 8) {
       return res.status(400).json({ error: 'Invalid input' });
     }
+
     const hash = await bcrypt.hash(String(password), 10);
     const r = await pool.query(
       'INSERT INTO users (name,email,password_hash) VALUES ($1,$2,$3) RETURNING id,email,name',
       [String(name), String(email).toLowerCase(), hash],
     );
     const user: SessionUser = r.rows[0];
+
     setSessionUser(req, user);
+
     return res.json({ ok: true, user });
   } catch (e: any) {
-    if (e?.code === '23505') return res.status(409).json({ error: 'Email already registered' });
+    if (e?.code === '23505') {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
+
     return res.status(500).json({ error: 'Server error' });
   }
 });
@@ -119,12 +151,19 @@ app.post('/auth/login', async (req: Request, res: Response) => {
   try {
     const r = await pool.query('SELECT * FROM users WHERE email=$1', [String(email).toLowerCase()]);
     const user = r.rows[0];
+
     if (!user || !user.password_hash) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+
     const ok = await bcrypt.compare(String(password), user.password_hash);
-    if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
+
+    if (!ok) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
     setSessionUser(req, { id: user.id, email: user.email, name: user.name });
+
     return res.json({ ok: true, user: (req.session as any).user });
   } catch {
     return res.status(500).json({ error: 'Server error' });
@@ -152,11 +191,18 @@ app.get('/api/products', async (req: Request, res: Response) => {
   const pageSize = Math.min(Math.max(1, parseInt(String(req.query.pageSize || '12'), 10)), 50);
 
   let order = 'p.created_at DESC';
-  if (sort === 'price_asc') order = 'p.price_cents ASC';
-  if (sort === 'price_desc') order = 'p.price_cents DESC';
+
+  if (sort === 'price_asc') {
+    order = 'p.price_cents ASC';
+  }
+
+  if (sort === 'price_desc') {
+    order = 'p.price_cents DESC';
+  }
 
   const params: any[] = [];
   let where = '';
+
   if (q) {
     params.push(`%${q}%`);
     where = `WHERE p.title ILIKE $${params.length}`;
@@ -169,6 +215,7 @@ app.get('/api/products', async (req: Request, res: Response) => {
 
     params.push(pageSize);
     params.push(page * pageSize);
+
     const listRes = await pool.query(
       `SELECT p.* FROM products p ${where} ORDER BY ${order} LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params,
@@ -183,13 +230,17 @@ app.get('/api/products', async (req: Request, res: Response) => {
 app.get('/api/products/:productId', async (req: Request, res: Response) => {
   res.set('Content-Type', 'application/json; charset=utf-8');
   const id = parseInt(String(req.params.productId), 10);
-  if (!Number.isFinite(id)) return res.status(400).json({ error: 'Invalid id' });
+
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: 'Invalid id' });
+  }
 
   try {
     const r = await pool.query(
       'SELECT * FROM products WHERE id=$1',
       [id],
     );
+
     if (r.rows.length === 0) {
       return res.status(404).json({ error: 'Product Not Found' });
     }
@@ -206,7 +257,10 @@ app.get('/api/products/:productId', async (req: Request, res: Response) => {
 app.get('/api/reviews/:productId', async (req: Request, res: Response) => {
   res.set('Content-Type', 'application/json; charset=utf-8');
   const id = parseInt(String(req.params.productId), 10);
-  if (!Number.isFinite(id)) return res.status(400).json({ error: 'Invalid id' });
+
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: 'Invalid id' });
+  }
 
   try {
     const r = await pool.query(
@@ -224,8 +278,10 @@ app.get('/api/reviews/:productId', async (req: Request, res: Response) => {
 /** Get current user's cart (with products) */
 app.get('/api/cart', requireAuth, async (req, res) => {
   const user = (req.session as any).user as SessionUser;
+
   try {
     const data = await getCartWithProducts(user.id);
+
     return res.json(data);
   } catch {
     return res.status(500).json({ error: 'Server error' });
@@ -237,11 +293,14 @@ app.post('/api/cart/items', requireAuth, async (req, res) => {
   const user = (req.session as any).user as SessionUser;
   const productId = Number(req.body?.productId);
   const qty = Math.max(1, Number(req.body?.qty ?? 1));
+
   if (!Number.isFinite(productId) || productId <= 0) {
     return res.status(400).json({ error: 'Invalid productId' });
   }
+
   try {
     const cartId = await getOrCreateCartId(user.id);
+
     await pool.query(
       `INSERT INTO cart_items (cart_id, product_id, qty)
        VALUES ($1, $2, $3)
@@ -249,7 +308,9 @@ app.post('/api/cart/items', requireAuth, async (req, res) => {
        DO UPDATE SET qty = cart_items.qty + EXCLUDED.qty`,
       [cartId, productId, qty],
     );
+
     const data = await getCartWithProducts(user.id);
+
     return res.json(data);
   } catch {
     return res.status(500).json({ error: 'Server error' });
@@ -261,11 +322,14 @@ app.patch('/api/cart/items', requireAuth, async (req, res) => {
   const user = (req.session as any).user as SessionUser;
   const productId = Number(req.body?.productId);
   const qty = Number(req.body?.qty);
+
   if (!Number.isFinite(productId) || productId <= 0 || !Number.isFinite(qty) || qty < 0) {
     return res.status(400).json({ error: 'Invalid payload' });
   }
+
   try {
     const cartId = await getOrCreateCartId(user.id);
+
     if (qty === 0) {
       await pool.query('DELETE FROM cart_items WHERE cart_id=$1 AND product_id=$2', [cartId, productId]);
     } else {
@@ -277,7 +341,9 @@ app.patch('/api/cart/items', requireAuth, async (req, res) => {
         [cartId, productId, qty],
       );
     }
+
     const data = await getCartWithProducts(user.id);
+
     return res.json(data);
   } catch {
     return res.status(500).json({ error: 'Server error' });
@@ -288,11 +354,18 @@ app.patch('/api/cart/items', requireAuth, async (req, res) => {
 app.delete('/api/cart/items/:productId', requireAuth, async (req, res) => {
   const user = (req.session as any).user as SessionUser;
   const productId = Number(req.params.productId);
-  if (!Number.isFinite(productId) || productId <= 0) return res.status(400).json({ error: 'Invalid productId' });
+
+  if (!Number.isFinite(productId) || productId <= 0) {
+    return res.status(400).json({ error: 'Invalid productId' });
+  }
+
   try {
     const cartId = await getOrCreateCartId(user.id);
+
     await pool.query('DELETE FROM cart_items WHERE cart_id=$1 AND product_id=$2', [cartId, productId]);
+
     const data = await getCartWithProducts(user.id);
+
     return res.json(data);
   } catch {
     return res.status(500).json({ error: 'Server error' });
@@ -304,8 +377,11 @@ app.post('/api/cart/clear', requireAuth, async (req, res) => {
   const user = (req.session as any).user as SessionUser;
   try {
     const cartId = await getOrCreateCartId(user.id);
+
     await pool.query('DELETE FROM cart_items WHERE cart_id=$1', [cartId]);
+
     const data = await getCartWithProducts(user.id);
+
     return res.json(data);
   } catch {
     return res.status(500).json({ error: 'Server error' });
@@ -317,13 +393,20 @@ app.post('/api/cart/clear', requireAuth, async (req, res) => {
 /** Simulated checkout (requires login and non-empty server cart) */
 app.post('/api/checkout', requireAuth, async (req: Request, res: Response) => {
   const user = (req.session as any).user as SessionUser;
+
   try {
     const { cartId, items, subtotal } = await getCartWithProducts(user.id);
-    if (items.length === 0) return res.status(400).json({ error: 'Empty cart' });
+
+    if (items.length === 0) {
+      return res.status(400).json({ error: 'Empty cart' });
+    }
 
     // OPTIONAL: Validate shipping in req.body.shipping if you keep it
     const address = String(req.body?.shipping?.address || '').trim();
-    if (address.length < 5) return res.status(400).json({ error: 'Invalid address' });
+
+    if (address.length < 5) {
+      return res.status(400).json({ error: 'Invalid address' });
+    }
 
     // Simulate success
     const orderId = Math.floor(Math.random() * 1_000_000);
