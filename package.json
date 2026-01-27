@@ -1,0 +1,26 @@
+{
+  "name": "postershop",
+  "version": "1.0.0",
+  "description": "A minimalist ecommerce site that sells **posters**. Built for QA exercises and e2e testing.\r - Frontend: React + Redux Toolkit + React Router + Vite (**TypeScript**)\r - Backend: Express + PostgreSQL + Sessions (**TypeScript**)\r - Auth: Local email/password (bcrypt). No OIDC.\r - DB: PostgreSQL (Docker compose included)\r - Payments: Simulated checkout with validation",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alvart/postershop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/alvart/postershop/issues"
+  },
+  "homepage": "https://github.com/alvart/postershop#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@types/node": "^25.0.10"
+  }
+}
