@@ -10,6 +10,16 @@ class HomePage {
         this.pageBackwardArrow = page.locator('//button[normalize-space(.) = "Prev"]')
         this.viewButton = page.locator('//div[@class="actions"]/a[normalize-space(.) = "View"]')
         this.filterDropdown = page.locator('select[class="input"]')
+        this.posterPageHeader = page.locator('div p')
+        this.purchaseAmount = page.locator('input[type="number"]')
+        this.addToCartButton = page.locator('//button[@class="btn primary" and normalize-space(.) = "Add to cart"]')
+        this.cartIcon = page.locator('a[href="/cart"]')
+        this.cartItemsNumberIcon = page.locator('a[href="/cart"] span')
+        this.returnToShopButton = page.locator('//a[normalize-space(.) = "PosterShop"]')
+        this.checkoutButton = page.locator('a[href="/checkout"]')
+        this.payButton = page.locator('//button[@class="btn primary" and normalize-space(.) = "Pay"]')
+        this.paymentSuccess = page.locator('//div[@role="status"]/div[normalize-space(.) = "Transaction successful. Order #640600."]')
+        this.shopTable = page.locator('div.grid')
     
     }
 
@@ -41,16 +51,13 @@ class HomePage {
             await this.page.waitForTimeout(100)
         }
         await expect(this.pageBackwardArrow).toBeDisabled()
-
-
-        // await this.pageBackwardArrow.click()
-        // await expect(this.pageBackwardArrow).toHaveAttribute('disabled')
     }
 
     async openPoster(title) {
         await this.searchPoster(title)
         await this.viewButton.click()
-        console.log(`Poster ${title} is opened`)
+        console.log(`Opening poster ${title}`)
+        await expect(this.posterPageHeader).toContainText('Premium matte poster')
     }
 
     async filterPosters(searchCriteria) {
@@ -71,6 +78,30 @@ class HomePage {
 
         return prices
     }
+
+    async addPosterToCart(number) {
+        await this.purchaseAmount.fill(String(number))
+        console.log('Editing the amount of the item')
+        await this.addToCartButton.click()
+        console.log('Adding the item to the cart')
+        await expect(this.cartItemsNumberIcon).not.toContainText('0')
+        console.log('Checking that the cart is not empty now')
+        // Return to the main page
+        await this.returnToShopButton.click()
+        console.log('Returning to the list of posters')
+    }
+
+    async buyPoster() {
+        await this.cartIcon.click()
+        console.log('Opening the cart')
+        await this.checkoutButton.click()
+        console.log('Clicking Checkout btn')
+        await this.payButton.click()
+        console.log('Confirming payment')
+        await expect(this.cartItemsNumberIcon).toContainText('0')
+        console.log('Checking that the cart is empty now')
+    }
+    
   
 }
 
