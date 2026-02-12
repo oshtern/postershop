@@ -2,8 +2,10 @@ const { test, expect } = require('@playwright/test')
 const LoginPage = require('../pages/LoginPage')
 const HomePage = require('../pages/HomePage')
 
-const title = 'Golden Dunes'
+const title = 'golden dunes'
 const nextTitle = 'Canal Bridge'
+const posterToBuy = 'Midnight Ocean'
+const anotherPosterToBuy = 'Glasshouse Palms'
 const secondPageTitle = 'Retro Cassette'
 const thirdPageTitle = 'Palm Shadows'
 const fourthPageTitle = 'Sakura Alley'
@@ -125,4 +127,32 @@ test.describe('Test Project test scenario', () => {
         const firstPoster = allPosters.first()
         await expect(firstPoster.locator('h3')).toContainText('Golden Dunes')
     })
+
+     test('Buying 1 poster', async ({ page }) => {
+        // Clicking "Add to cart" button for particular poster
+        await homePage.openPoster(posterToBuy)
+        await homePage.addPosterToCart(1)
+
+        // Checkout
+        await homePage.buyPoster()
+    })
+
+    test('Adding multiple copies of a poster to cart and remove them', async ({ page }) => {
+        // Buying more than one copy of one poster
+        await homePage.openPoster(posterToBuy)
+        await homePage.addPosterToCart(3)
+    })
+    
+    test('Buying multiple posters', async ({ page }) => {
+        // Adding several different posters to cart
+        await homePage.openPoster(posterToBuy)
+        await homePage.addPosterToCart(1)
+
+        await homePage.openPoster(anotherPosterToBuy)
+        await homePage.addPosterToCart(1)
+
+        await homePage.buyPoster()
+    })
+
+
 })
