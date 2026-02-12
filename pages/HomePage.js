@@ -26,7 +26,7 @@ class HomePage {
     async searchPoster(title) {
         await this.searchInput.fill(title)
         await expect(this.posterCard).toBeVisible({ timeout: 10000 })
-        const cardSearched = this.page.locator(`//h3[contains(normalize-space(.), "${title}")]`)
+        const cardSearched = this.page.locator(`//h3[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${title}')]`)
         await expect(cardSearched).toBeVisible({ timeout: 10000 })
     }
 
