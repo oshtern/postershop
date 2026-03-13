@@ -51,10 +51,6 @@ class HomePage {
             await this.page.waitForTimeout(100)
         }
         await expect(this.pageBackwardArrow).toBeDisabled()
-
-
-        // await this.pageBackwardArrow.click()
-        // await expect(this.pageBackwardArrow).toHaveAttribute('disabled')
     }
 
     async openPoster(title) {

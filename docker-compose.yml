@@ -10,5 +10,18 @@ services:
       - "5432:5432"
     volumes:
       - dbdata:/var/lib/postgresql/data
+      - ./backend/db:/docker-entrypoint-initdb.d
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgres://postershop:postershop@db:5432/postershop
+      SESSION_SECRET: changeme
+      FRONTEND_ORIGIN: http://localhost:4000
+    depends_on:
+      - db
 volumes:
   dbdata:

@@ -10,6 +10,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 import session from 'express-session';
+import path from 'path';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import swaggerUi from 'swagger-ui-express';
@@ -29,7 +30,6 @@ process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION', err);
   process.exit(1);
 });
-
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(
@@ -46,6 +46,7 @@ app.use(
     cookie: { secure: false },
   }),
 );
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Swagger UI (OpenAPI)
 app.use(
