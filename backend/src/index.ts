@@ -421,6 +421,11 @@ app.post('/api/checkout', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// SPA catch-all: serve index.html for any unmatched GET request
+app.get('*', (_req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);

@@ -1,5 +1,4 @@
 const { expect } = require('@playwright/test')
-const config = require('../config')
 
 class HomePage {
     constructor(page) {
@@ -26,7 +25,7 @@ class HomePage {
     async searchPoster(title) {
         await this.searchInput.fill(title)
         await expect(this.posterCard).toBeVisible({ timeout: 10000 })
-        const cardSearched = this.page.locator(`//h3[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${title}')]`)
+        const cardSearched = this.page.locator(`//h3[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${title.toLowerCase()}')]`)
         await expect(cardSearched).toBeVisible({ timeout: 10000 })
     }
 
